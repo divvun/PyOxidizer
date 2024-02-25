@@ -47,7 +47,7 @@ path = "../python-packaging"
 default-features = false
 
 [dependencies.pyo3]
-version = "0.20.3"
+git = "https://github.com/bbqsrc/pyo3"
 features = ["macros"]
 
 [dependencies.zip]
