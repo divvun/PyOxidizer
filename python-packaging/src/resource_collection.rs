@@ -31,7 +31,7 @@ use {
         borrow::Cow,
         collections::{BTreeMap, BTreeSet, HashMap},
         path::PathBuf,
-    },
+    }
 };
 
 /// Represents a single file install.
@@ -1341,6 +1341,8 @@ impl PythonResourceCollector {
                 && !extension_module.object_file_data.is_empty()
         };
 
+        // println!("{}: LS:{can_load_standalone} LD:{can_load_dynamic_library_memory} LB:{can_link_builtin}", extension_module.name);
+
         // Whether we can produce a standalone shared library extension module.
         // TODO consider allowing this if object files are present.
         let can_link_standalone = extension_module.shared_library.is_some();
@@ -1392,6 +1394,8 @@ impl PythonResourceCollector {
             true
         // Builtin linking is the only mechanism available to us.
         } else if can_link_builtin && (!can_link_standalone || !can_load_standalone) {
+            true
+        } else if extension_module.name == "_crypt" {
             true
         // We want in memory loading and we can link a builtin
         } else {

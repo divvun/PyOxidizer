@@ -146,6 +146,7 @@ impl StandalonePythonExecutableBuilder {
         packaging_policy: PythonPackagingPolicy,
         config: PyembedPythonInterpreterConfig,
     ) -> Result<Box<Self>> {
+        println!("{:?}", host_distribution.python_exe_path());
         let host_python_exe = host_distribution.python_exe_path().to_path_buf();
 
         let (supports_static_libpython, supports_dynamic_libpython) =
@@ -203,7 +204,7 @@ impl StandalonePythonExecutableBuilder {
             allowed_extension_module_locations.push(AbstractResourceLocation::RelativePath);
         }
 
-        let allow_new_builtin_extension_modules = link_mode == LibpythonLinkMode::Static;
+        let allow_new_builtin_extension_modules = true; // link_mode == LibpythonLinkMode::Static;
 
         let mut builder = Box::new(Self {
             host_triple,
@@ -260,6 +261,8 @@ impl StandalonePythonExecutableBuilder {
                 .object_files
                 .push(FileData::Path(fs_path.clone()));
         }
+
+        // println!("{:?}", self.core_build_context.object_files);
 
         for entry in &self.target_distribution.links_core {
             if entry.framework {

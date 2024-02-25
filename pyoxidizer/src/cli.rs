@@ -6,6 +6,7 @@ use {
     crate::{
         environment::{default_target_triple, PYOXIDIZER_VERSION},
         project_building, projectmgmt,
+        py_packaging::distribution::PythonDistributionLocation,
     },
     anyhow::{anyhow, Context, Result},
     clap::{value_parser, Arg, ArgAction, ArgMatches, Command},
@@ -329,6 +330,24 @@ pub fn run_cli() -> Result<()> {
                     .value_name("DESTINATION_PATH")
                     .required(true)
                     .help("Output directory for written files"),
+            )
+            .arg(
+                Arg::new("dist_path")
+                    .action(ArgAction::Set)
+                    .value_name("DIST_PATH")
+                    .help("Dist path"),
+            )
+            .arg(
+                Arg::new("dist_sha256")
+                    .action(ArgAction::Set)
+                    .value_name("DIST_SHA256")
+                    .help("Dist sha256"),
+            )
+            .arg(
+                Arg::new("is_dynamic")
+                    .long("dynamic")
+                    .action(ArgAction::SetTrue)
+                    .help("Whether to use dylib"),
             ),
     ));
 
@@ -606,6 +625,18 @@ pub fn run_cli() -> Result<()> {
             let dest_path = args
                 .get_one::<PathBuf>("dest_path")
                 .expect("dest_path should be required");
+            let dist_path = args.get_one::<String>("dist_path");
+            let dist_sha256 = args.get_one::<String>("dist_sha256");
+            let is_dynamic = args.get_one::<bool>("is_dynamic").copied().unwrap_or_default();
+
+            let dist = if let (Some(dist_path), Some(dist_sha256)) = (dist_path, dist_sha256) {
+                Some(PythonDistributionLocation::Local {
+                    local_path: dist_path.to_string(),
+                    sha256: dist_sha256.to_string(),
+                })
+            } else {
+                None
+            };
 
             projectmgmt::generate_python_embedding_artifacts(
                 &env,
@@ -613,6 +644,8 @@ pub fn run_cli() -> Result<()> {
                 flavor,
                 python_version.map(|x| x.as_str()),
                 dest_path,
+                dist,
+                is_dynamic,
             )
         }
 

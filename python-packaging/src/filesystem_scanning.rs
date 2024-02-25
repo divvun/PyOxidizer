@@ -209,6 +209,7 @@ impl<'a> PythonResourceIterator<'a> {
     }
 
     fn resolve_path(&mut self, path: &Path) -> Option<PathItem<'a>> {
+        // println!("PATH: {:?}", path);
         let mut rel_path = path
             .strip_prefix(&self.root_path)
             .expect("unable to strip path prefix");

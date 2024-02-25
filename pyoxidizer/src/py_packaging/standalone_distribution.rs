@@ -753,6 +753,8 @@ impl StandaloneDistribution {
             links_core.push(depends);
         }
 
+        // println!("{:?}", &objs_core);
+
         let module_suffixes = PythonModuleSuffixes {
             source: pi
                 .python_suffixes
@@ -780,6 +782,7 @@ impl StandaloneDistribution {
                 .ok_or_else(|| anyhow!("distribution does not define extension suffixes"))?
                 .clone(),
         };
+        // println!("{:?}", &module_suffixes);
 
         // Collect extension modules.
         for (module, variants) in &pi.build_info.extensions {
@@ -801,6 +804,7 @@ impl StandaloneDistribution {
                     .iter()
                     .map(|p| FileData::Path(python_path.join(p)))
                     .collect();
+                // println!("{:?}", &object_file_data);
                 let mut links = Vec::new();
 
                 for link in &entry.links {
@@ -814,6 +818,7 @@ impl StandaloneDistribution {
 
                     links.push(depends);
                 }
+                // println!("{:?}", &links);
 
                 let component_flavor =
                     ComponentFlavor::PythonStandardLibraryExtensionModule(module.clone());
@@ -968,6 +973,7 @@ impl StandaloneDistribution {
         };
 
         let inittab_object = python_path.join(pi.build_info.inittab_object);
+        println!("loading {:?}", pi.python_extension_module_loading);
 
         Ok(Self {
             base_dir: dist_dir.to_path_buf(),

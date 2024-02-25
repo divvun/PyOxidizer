@@ -14,7 +14,7 @@ use {
             distribution::{
                 default_distribution_location, resolve_distribution,
                 resolve_python_distribution_archive, BinaryLibpythonLinkMode, DistributionCache,
-                DistributionFlavor, PythonDistribution,
+                DistributionFlavor, PythonDistribution, PythonDistributionLocation,
             },
             standalone_distribution::StandaloneDistribution,
         },
@@ -22,10 +22,10 @@ use {
         starlark::eval::EvaluationContextBuilder,
     },
     anyhow::{anyhow, Context, Result},
-    python_packaging::licensing::LicenseFlavor,
     python_packaging::{
         filesystem_scanning::find_python_resources,
         interpreter::{MemoryAllocatorBackend, PythonInterpreterProfile},
+        licensing::LicenseFlavor,
         resource::PythonResource,
         wheel::WheelArchive,
     },
@@ -577,6 +577,8 @@ pub fn generate_python_embedding_artifacts(
     flavor: &str,
     python_version: Option<&str>,
     dest_path: &Path,
+    dist_location: Option<PythonDistributionLocation>,
+    is_dynamic: bool,
 ) -> Result<()> {
     let flavor = DistributionFlavor::try_from(flavor).map_err(|e| anyhow!("{}", e))?;
 
@@ -585,15 +587,21 @@ pub fn generate_python_embedding_artifacts(
 
     let dest_path = canonicalize_path(dest_path).context("canonicalizing destination directory")?;
 
-    let distribution_record = PYTHON_DISTRIBUTIONS
-        .find_distribution(target_triple, &flavor, python_version)
-        .ok_or_else(|| anyhow!("could not find Python distribution matching requirements"))?;
-
     let distribution_cache = DistributionCache::new(Some(&env.python_distributions_dir()));
 
-    let dist = distribution_cache
-        .resolve_distribution(&distribution_record.location, None)
-        .context("resolving Python distribution")?;
+    let dist = if let Some(dist_location) = dist_location {
+        distribution_cache
+            .resolve_distribution(&dist_location, None)
+            .context("resolving Python distribution")?
+    } else {
+        let distribution_record = PYTHON_DISTRIBUTIONS
+            .find_distribution(target_triple, &flavor, python_version)
+            .ok_or_else(|| anyhow!("could not find Python distribution matching requirements"))?;
+
+        distribution_cache
+            .resolve_distribution(&distribution_record.location, None)
+            .context("resolving Python distribution")?
+    };
 
     let host_dist = distribution_cache
         .host_distribution(Some(dist.python_major_minor_version().as_str()), None)
@@ -609,12 +617,27 @@ pub fn generate_python_embedding_artifacts(
 
     interpreter_config.config.profile = PythonInterpreterProfile::Python;
     interpreter_config.allocator_backend = MemoryAllocatorBackend::Default;
+    interpreter_config.config.interactive = Some(false);
+    interpreter_config.config.isolated = Some(true);
+    interpreter_config.config.site_import = Some(false);
+
+    let link_mode = if is_dynamic {
+        BinaryLibpythonLinkMode::Dynamic
+    } else {
+        BinaryLibpythonLinkMode::Static
+    };
+    println!("Link mode: {link_mode:?}");
+
+    if is_dynamic {
+        interpreter_config.filesystem_importer = true;
+        interpreter_config.oxidized_importer = false;
+    }
 
     let mut builder = dist.as_python_executable_builder(
         default_target_triple(),
         target_triple,
         "python",
-        BinaryLibpythonLinkMode::Default,
+        link_mode,
         &policy,
         &interpreter_config,
         Some(host_dist.clone_trait()),
@@ -623,8 +646,8 @@ pub fn generate_python_embedding_artifacts(
     builder.set_tcl_files_path(Some("tcl".to_string()));
 
     builder
-        .add_distribution_resources(None)
-        .context("adding distribution resources")?;
+        .add_distribution_resources(None).unwrap();
+        // .context("adding distribution resources")?;
 
     let embedded_context = builder
         .to_embedded_python_context(env, "1")

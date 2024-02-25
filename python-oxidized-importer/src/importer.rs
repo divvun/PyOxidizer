@@ -332,9 +332,12 @@ impl ImporterState {
             unsafe { PyDict::from_borrowed_ptr_or_err(py, pyffi::PyEval_GetBuiltins()) }?;
 
         let exec_fn = match builtins_module.get_item("exec") {
-            Some(v) => v,
-            None => {
+            Ok(Some(v)) => v,
+            Ok(None) => {
                 return Err(PyValueError::new_err("could not obtain __builtins__.exec"));
+            }
+            Err(e) => {
+                return Err(e)
             }
         }
         .into_py(py);

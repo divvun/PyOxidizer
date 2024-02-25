@@ -57,53 +57,53 @@ pub fn prepare_hacked_distutils(
     dest_dir: &Path,
     extra_python_paths: &[&Path],
 ) -> Result<HashMap<String, String>> {
-    let extra_sys_path = dest_dir.join("packages");
+    // let extra_sys_path = dest_dir.join("packages");
 
-    warn!(
-        "installing modified distutils to {}",
-        extra_sys_path.display()
-    );
+    // warn!(
+    //     "installing modified distutils to {}",
+    //     extra_sys_path.display()
+    // );
 
-    let dest_distutils_path = extra_sys_path.join("distutils");
+    // let dest_distutils_path = extra_sys_path.join("distutils");
 
-    for entry in walkdir::WalkDir::new(orig_distutils_path) {
-        let entry = entry?;
+    // for entry in walkdir::WalkDir::new(orig_distutils_path) {
+    //     let entry = entry?;
 
-        if entry.path().is_dir() {
-            continue;
-        }
+    //     if entry.path().is_dir() {
+    //         continue;
+    //     }
 
-        let source_path = entry.path();
-        let rel_path = source_path
-            .strip_prefix(orig_distutils_path)
-            .with_context(|| format!("stripping prefix from {}", source_path.display()))?;
-        let dest_path = dest_distutils_path.join(rel_path);
+    //     let source_path = entry.path();
+    //     let rel_path = source_path
+    //         .strip_prefix(orig_distutils_path)
+    //         .with_context(|| format!("stripping prefix from {}", source_path.display()))?;
+    //     let dest_path = dest_distutils_path.join(rel_path);
 
-        let dest_dir = dest_path.parent().unwrap();
-        std::fs::create_dir_all(dest_dir)?;
-        std::fs::copy(source_path, &dest_path)?;
-    }
+    //     let dest_dir = dest_path.parent().unwrap();
+    //     std::fs::create_dir_all(dest_dir)?;
+    //     std::fs::copy(source_path, &dest_path)?;
+    // }
 
-    for (path, data) in MODIFIED_DISTUTILS_FILES.iter() {
-        let dest_path = dest_distutils_path.join(path);
+    // for (path, data) in MODIFIED_DISTUTILS_FILES.iter() {
+    //     let dest_path = dest_distutils_path.join(path);
 
-        warn!("modifying distutils/{} for oxidation", path);
-        std::fs::write(&dest_path, data)
-            .with_context(|| format!("writing {}", dest_path.display()))?;
-    }
+    //     warn!("modifying distutils/{} for oxidation", path);
+    //     std::fs::write(&dest_path, data)
+    //         .with_context(|| format!("writing {}", dest_path.display()))?;
+    // }
 
     let state_dir = dest_dir.join("pyoxidizer-build-state");
     create_dir_all(&state_dir)?;
 
-    let mut python_paths = vec![extra_sys_path.display().to_string()];
-    python_paths.extend(extra_python_paths.iter().map(|p| p.display().to_string()));
+    // let mut python_paths = vec![extra_sys_path.display().to_string()];
+    // python_paths.extend(extra_python_paths.iter().map(|p| p.display().to_string()));
 
-    let path_separator = if cfg!(windows) { ";" } else { ":" };
+    // let path_separator = if cfg!(windows) { ";" } else { ":" };
 
-    let python_path = python_paths.join(path_separator);
+    // let python_path = python_paths.join(path_separator);
 
     let mut res = HashMap::new();
-    res.insert("PYTHONPATH".to_string(), python_path);
+    // res.insert("PYTHONPATH".to_string(), python_path);
     res.insert(
         "PYOXIDIZER_DISTUTILS_STATE_DIR".to_string(),
         state_dir.display().to_string(),

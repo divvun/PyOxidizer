@@ -42,6 +42,7 @@ fn is_module_importable<X>(entry: &Resource<X>, optimize_level: BytecodeOptimiza
 where
     [X]: ToOwned<Owned = Vec<X>>,
 {
+    println!("is_module_importable {:?}", entry.name);
     entry.in_memory_source.is_some()
         || entry.relative_path_module_source.is_some()
         || match optimize_level {
@@ -326,7 +327,7 @@ impl<'a> ImportablePythonModule<'a, u8> {
         Ok(if let Some(path) = self.origin_path() {
             Some(path.into_py(py).into_ref(py))
         } else {
-            None
+            Some(PathBuf::from(".").into_py(py).into_ref(py))
         })
     }
 
@@ -571,8 +572,19 @@ impl<'a> PythonResourcesState<'a, u8> {
 
     /// Load `frozen` modules from the Python interpreter.
     pub fn index_interpreter_frozen_modules(&mut self) -> Result<(), &'static str> {
+        let modules = unsafe { if pyffi::_PyImport_FrozenBootstrap.is_null() {
+            pyffi::PyImport_FrozenModules
+        } else {
+            pyffi::_PyImport_FrozenBootstrap
+        } };
+
         for i in 0.. {
-            let record = unsafe { pyffi::PyImport_FrozenModules.offset(i) };
+            println!("{i}");
+            let record = unsafe { modules.offset(i) };
+
+            if record.is_null() {
+                break;
+            }
 
             if unsafe { *record }.name.is_null() {
                 break;
@@ -637,6 +649,7 @@ impl<'a> PythonResourcesState<'a, u8> {
         name: &str,
         optimize_level: BytecodeOptimizationLevel,
     ) -> Option<ImportablePythonModule<u8>> {
+        println!("resolve_importable_module {name}");
         // Python's filesystem based importer accepts `foo.__init__` as a valid
         // module name. When these names are encountered, it fails to recognize
         // that `__init__` is special and happily searches for and uses/imports a
@@ -745,6 +758,8 @@ impl<'a> PythonResourcesState<'a, u8> {
         package: &str,
         resource_name: &str,
     ) -> PyResult<Option<&'p PyAny>> {
+        println!("get_package_resource_file {package} {resource_name}");
+        
         let entry = match self.resources.get(package) {
             Some(entry) => entry,
             None => return Ok(None),
@@ -824,6 +839,8 @@ impl<'a> PythonResourcesState<'a, u8> {
 
     /// Whether the given resource name is a directory with resources.
     pub fn is_package_resource_directory(&self, package: &str, name: &str) -> bool {
+        println!("is pkg res dir? {package} {name}");
+
         // Normalize to UNIX style paths.
         let name = name.replace('\\', "/");
 
@@ -951,17 +968,27 @@ impl<'a> PythonResourcesState<'a, u8> {
         // known ahead-of-time.
         let path = path.to_owned();
         let native_path = PathBuf::from(&path);
+        println!("WAT: {}", native_path.display());
 
         let (relative_path, check_in_memory, check_relative_path) =
             if let Ok(relative_path) = native_path.strip_prefix(&self.current_exe) {
                 (relative_path, true, false)
             } else if let Ok(relative_path) = native_path.strip_prefix(&self.origin) {
-                (relative_path, false, true)
+                let io_module = py.import("io")?;
+
+                let fh = io_module
+                    .getattr("FileIO")?
+                    .call((native_path.into_py(py).into_ref(py), "r"), None)?;
+
+                return fh.call_method0("read");
             } else {
-                return Err(PyErr::from_type(
-                    PyOSError::type_object(py),
-                    (ENOENT, "resource not known", path),
-                ));
+                let io_module = py.import("io")?;
+
+                let fh = io_module
+                    .getattr("FileIO")?
+                    .call((native_path.into_py(py).into_ref(py), "r"), None)?;
+
+                return fh.call_method0("read");
             };
 
         // There is also an additional wrinkle with resolving resources from paths.

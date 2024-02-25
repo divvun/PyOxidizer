@@ -350,82 +350,82 @@ impl<'interpreter, 'resources> MainPythonInterpreter<'interpreter, 'resources> {
         // whether it is safe to defer the import of this module post completion of
         // _Py_InitializeMain.
 
-        if !self.config.filesystem_importer {
-            remove_external_importers(sys_module).map_err(|err| {
-                NewInterpreterError::new_from_pyerr(py, err, "removing external importers")
-            })?;
-        }
+        // if !self.config.filesystem_importer {
+        //     remove_external_importers(sys_module).map_err(|err| {
+        //         NewInterpreterError::new_from_pyerr(py, err, "removing external importers")
+        //     })?;
+        // }
 
-        // We aren't able to hold a &PyAny to OxidizedFinder through multi-phase interpreter
-        // initialization. So recover an instance now if it is available.
-        let oxidized_finder = if oxidized_finder_loaded {
-            sys_module
-                .getattr("meta_path")
-                .map_err(|err| {
-                    NewInterpreterError::new_from_pyerr(py, err, "obtaining sys.meta_path")
-                })?
-                .iter()
-                .map_err(|err| {
-                    NewInterpreterError::new_from_pyerr(
-                        py,
-                        err,
-                        "obtaining iterator for sys.meta_path",
-                    )
-                })?
-                .find(|finder| {
-                    // This should never fail.
-                    if let Ok(finder) = finder {
-                        OxidizedFinder::is_type_of(finder)
-                    } else {
-                        false
-                    }
-                })
-        } else {
-            None
-        };
+        // // We aren't able to hold a &PyAny to OxidizedFinder through multi-phase interpreter
+        // // initialization. So recover an instance now if it is available.
+        // let oxidized_finder = if oxidized_finder_loaded {
+        //     sys_module
+        //         .getattr("meta_path")
+        //         .map_err(|err| {
+        //             NewInterpreterError::new_from_pyerr(py, err, "obtaining sys.meta_path")
+        //         })?
+        //         .iter()
+        //         .map_err(|err| {
+        //             NewInterpreterError::new_from_pyerr(
+        //                 py,
+        //                 err,
+        //                 "obtaining iterator for sys.meta_path",
+        //             )
+        //         })?
+        //         .find(|finder| {
+        //             // This should never fail.
+        //             if let Ok(finder) = finder {
+        //                 OxidizedFinder::is_type_of(finder)
+        //             } else {
+        //                 false
+        //             }
+        //         })
+        // } else {
+        //     None
+        // };
 
-        if let Some(Ok(finder)) = oxidized_finder {
-            install_path_hook(finder, sys_module).map_err(|err| {
-                NewInterpreterError::new_from_pyerr(
-                    py,
-                    err,
-                    "installing OxidizedFinder in sys.path_hooks",
-                )
-            })?;
-        }
+        // if let Some(Ok(finder)) = oxidized_finder {
+        //     install_path_hook(finder, sys_module).map_err(|err| {
+        //         NewInterpreterError::new_from_pyerr(
+        //             py,
+        //             err,
+        //             "installing OxidizedFinder in sys.path_hooks",
+        //         )
+        //     })?;
+        // }
 
-        if self.config.argvb {
-            let args_objs = self
-                .config
-                .resolve_sys_argvb()
-                .iter()
-                .map(|x| osstring_to_bytes(py, x.clone()))
-                .collect::<Vec<_>>();
+        // if self.config.argvb {
+        //     let args_objs = self
+        //         .config
+        //         .resolve_sys_argvb()
+        //         .iter()
+        //         .map(|x| osstring_to_bytes(py, x.clone()))
+        //         .collect::<Vec<_>>();
 
-            let args = args_objs.to_object(py);
-            let argvb = b"argvb\0";
+        //     let args = args_objs.to_object(py);
+        //     let argvb = b"argvb\0";
 
-            let res =
-                unsafe { pyffi::PySys_SetObject(argvb.as_ptr() as *const c_char, args.as_ptr()) };
+        //     let res =
+        //         unsafe { pyffi::PySys_SetObject(argvb.as_ptr() as *const c_char, args.as_ptr()) };
 
-            match res {
-                0 => (),
-                _ => return Err(NewInterpreterError::Simple("unable to set sys.argvb")),
-            }
-        }
+        //     match res {
+        //         0 => (),
+        //         _ => return Err(NewInterpreterError::Simple("unable to set sys.argvb")),
+        //     }
+        // }
 
-        // As a convention, sys.oxidized is set to indicate we are running from
-        // a self-contained application.
-        let oxidized = b"oxidized\0";
+        // // As a convention, sys.oxidized is set to indicate we are running from
+        // // a self-contained application.
+        // let oxidized = b"oxidized\0";
         let py_true = true.into_py(py);
 
-        let res =
-            unsafe { pyffi::PySys_SetObject(oxidized.as_ptr() as *const c_char, py_true.as_ptr()) };
+        // let res =
+        //     unsafe { pyffi::PySys_SetObject(oxidized.as_ptr() as *const c_char, py_true.as_ptr()) };
 
-        match res {
-            0 => (),
-            _ => return Err(NewInterpreterError::Simple("unable to set sys.oxidized")),
-        }
+        // match res {
+        //     0 => (),
+        //     _ => return Err(NewInterpreterError::Simple("unable to set sys.oxidized")),
+        // }
 
         if self.config.sys_frozen {
             let frozen = b"frozen\0";
@@ -438,17 +438,17 @@ impl<'interpreter, 'resources> MainPythonInterpreter<'interpreter, 'resources> {
             }
         }
 
-        if self.config.sys_meipass {
-            let meipass = b"_MEIPASS\0";
-            let value = self.config.origin().display().to_string().to_object(py);
+        // if self.config.sys_meipass {
+        //     let meipass = b"_MEIPASS\0";
+        //     let value = self.config.origin().display().to_string().to_object(py);
 
-            match unsafe {
-                pyffi::PySys_SetObject(meipass.as_ptr() as *const c_char, value.as_ptr())
-            } {
-                0 => (),
-                _ => return Err(NewInterpreterError::Simple("unable to set sys._MEIPASS")),
-            }
-        }
+        //     match unsafe {
+        //         pyffi::PySys_SetObject(meipass.as_ptr() as *const c_char, value.as_ptr())
+        //     } {
+        //         0 => (),
+        //         _ => return Err(NewInterpreterError::Simple("unable to set sys._MEIPASS")),
+        //     }
+        // }
 
         let write_modules_path = if let Some(key) = &self.config.write_modules_directory_env {
             if let Ok(path) = std::env::var(key) {
