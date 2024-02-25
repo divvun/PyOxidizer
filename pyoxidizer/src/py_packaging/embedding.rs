@@ -124,7 +124,7 @@ impl LinkSharedLibraryPath {
             .ok_or_else(|| anyhow!("unable to resolve shared library file name"))?
             .to_string_lossy();
 
-        println!("Wat", filename);
+        println!("Wat {}", filename);
 
         if filename.ends_with(".dll") {
             Ok(filename.trim_end_matches(".dll").to_string())
