@@ -45,7 +45,7 @@ type py_init_fn = extern "C" fn() -> *mut pyffi::PyObject;
 
 #[cfg(windows)]
 extern "C" {
-    pub fn _PyImport_FindExtensionObject(a: *mut PyObject, b: *mut PyObject) -> *mut PyObject;
+    pub fn _PyImport_FindExtensionObject(a: *mut pyffi::PyObject, b: *mut pyffi::PyObject) -> *mut pyffi::PyObject;
 }
 
 /// Implementation of `Loader.create_module()` for in-memory extension modules.
