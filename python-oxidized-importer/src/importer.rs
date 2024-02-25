@@ -42,6 +42,12 @@ use {
 #[allow(non_camel_case_types)]
 type py_init_fn = extern "C" fn() -> *mut pyffi::PyObject;
 
+
+#[cfg(windows)]
+extern "C" {
+    pub fn _PyImport_FindExtensionObject(a: *mut PyObject, b: *mut PyObject) -> *mut PyObject;
+}
+
 /// Implementation of `Loader.create_module()` for in-memory extension modules.
 ///
 /// The equivalent CPython code for importing extension modules is to call
@@ -57,6 +63,7 @@ type py_init_fn = extern "C" fn() -> *mut pyffi::PyObject;
 /// `_PyImport_LoadDynamicModuleWithSpec()` is more interesting. It takes a
 /// `FILE*` for the extension location, so we can't call it. So we need to
 /// reimplement it. Documentation of that is inline.
+
 #[cfg(windows)]
 fn extension_module_shared_library_create_module(
     resources_state: &PythonResourcesState<u8>,
@@ -70,7 +77,7 @@ fn extension_module_shared_library_create_module(
     let origin = PyString::new(py, "memory");
 
     let existing_module =
-        unsafe { pyffi::_PyImport_FindExtensionObject(name_py.as_ptr(), origin.as_ptr()) };
+        unsafe { _PyImport_FindExtensionObject(name_py.as_ptr(), origin.as_ptr()) };
 
     // We found an existing module object. Return it.
     if !existing_module.is_null() {
