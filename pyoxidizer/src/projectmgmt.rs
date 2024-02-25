@@ -654,8 +654,8 @@ pub fn generate_python_embedding_artifacts(
         .context("resolving embedded context")?;
 
     embedded_context
-        .write_files(&dest_path)
-        .context("writing embedded artifact files")?;
+        .write_files(&dest_path).unwrap();
+        // .context("writing embedded artifact files")?;
 
     embedded_context
         .extra_files
