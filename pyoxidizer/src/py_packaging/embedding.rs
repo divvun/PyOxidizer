@@ -133,7 +133,7 @@ impl LinkSharedLibraryPath {
                 .trim_end_matches(".dylib")
                 .trim_start_matches("lib")
                 .to_string())
-        } else if filename.ends_with(".so") {
+        } else if filename.split(".").find(|x| x == &"so").is_some() {
             Ok(filename
                 .trim_end_matches(".so")
                 .trim_start_matches("lib")
