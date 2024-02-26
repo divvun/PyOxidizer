@@ -76,18 +76,18 @@ fn extension_module_shared_library_create_module(
 ) -> PyResult<Py<PyAny>> {
     let origin = PyString::new(py, "memory");
 
-    let existing_module = std::ptr::null();
+    // let existing_module = std::ptr::null();
         // unsafe { _PyImport_FindExtensionObject(name_py.as_ptr(), origin.as_ptr()) };
 
     // We found an existing module object. Return it.
-    if !existing_module.is_null() {
-        return Ok(unsafe { PyObject::from_owned_ptr(py, existing_module) });
-    }
+    // if !existing_module.is_null() {
+    //     return Ok(unsafe { PyObject::from_owned_ptr(py, existing_module) });
+    // }
 
     // An error occurred calling _PyImport_FindExtensionObjectEx(). Raise it.
-    if !unsafe { pyffi::PyErr_Occurred() }.is_null() {
-        return Err(PyErr::fetch(py));
-    }
+    // if !unsafe { pyffi::PyErr_Occurred() }.is_null() {
+    //     return Err(PyErr::fetch(py));
+    // }
 
     // New module load request. Proceed to _PyImport_LoadDynamicModuleWithSpec()
     // functionality.
