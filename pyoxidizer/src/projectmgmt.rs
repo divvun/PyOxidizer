@@ -650,8 +650,8 @@ pub fn generate_python_embedding_artifacts(
         // .context("adding distribution resources")?;
 
     let embedded_context = builder
-        .to_embedded_python_context(env, "1")
-        .context("resolving embedded context")?;
+        .to_embedded_python_context(env, "1").unwrap();
+        // .context("resolving embedded context")?;
 
     embedded_context
         .write_files(&dest_path).unwrap();
