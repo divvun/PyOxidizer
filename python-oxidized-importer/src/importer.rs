@@ -76,8 +76,8 @@ fn extension_module_shared_library_create_module(
 ) -> PyResult<Py<PyAny>> {
     let origin = PyString::new(py, "memory");
 
-    let existing_module =
-        unsafe { _PyImport_FindExtensionObject(name_py.as_ptr(), origin.as_ptr()) };
+    let existing_module = std::ptr::null();
+        // unsafe { _PyImport_FindExtensionObject(name_py.as_ptr(), origin.as_ptr()) };
 
     // We found an existing module object. Return it.
     if !existing_module.is_null() {
