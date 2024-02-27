@@ -678,6 +678,14 @@ pub fn generate_python_embedding_artifacts(
         }
     }
 
+    if cfg!(windows) {
+        let dir = dist.base_dir
+            .join("python")
+            .join("install")
+            .join("DLLs");
+        fs_extra::copy_items(&[dir], &dest_path, &Default::default())?;
+    }
+
     m.materialize_files_with_replace(dest_path.join("stdlib"))
         .context("writing standard library")?;
 
